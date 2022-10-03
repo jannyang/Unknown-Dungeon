@@ -1,0 +1,97 @@
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+
+public class Player : Mover
+{
+    #region Fields
+    private SpriteRenderer spriteRenderer;
+    private bool isAlive = true;
+    #endregion
+
+    #region Unity Methods
+    protected override void Start()
+    {
+        base.Start();
+        spriteRenderer = GetComponent<SpriteRenderer>();
+    }
+    private void FixedUpdate()
+    {
+        float x = Input.GetAxisRaw("Horizontal");
+        float y = Input.GetAxisRaw("Vertical");
+
+        if (isAlive)
+            UpdateMotor(new Vector3(x, y, 0));
+    }
+    #endregion
+
+    #region Methods
+
+    #region 플레이어 데미지 피해, 피 회복
+    protected override void ReceiveDamage(Damage dmg)
+    {
+        if (!isAlive)
+            return;
+        base.ReceiveDamage(dmg);
+        GameManager.instance.OnHitPointChange();
+    }
+
+    public void Heal(int healingAmount)
+    {
+        if (hitpoint == maxHitpoint)
+            return;
+
+        hitpoint += healingAmount;
+        if (hitpoint > maxHitpoint)
+            hitpoint = maxHitpoint;
+        else
+        {
+            GameManager.instance.ShowText("+" + healingAmount.ToString() + "hp", 25, Color.green, transform.position, Vector3.up * 30, 1.0f);
+            GameManager.instance.OnHitPointChange();
+        }
+    }
+    #endregion
+
+    #region 플레이어 사망, 부활
+    protected override void Death()
+    {
+        isAlive = false;
+        GameManager.instance.deathMenuAnim.SetTrigger("Show");
+    }
+
+    public void Respawn()
+    {
+        Heal(maxHitpoint);
+        isAlive = true;
+        lastImmune = Time.time;
+        pushDirection = Vector3.zero;
+    }
+    #endregion
+
+    #region 캐릭터 Sprite 바꾸기
+    public void SwapSprite(int skinId)
+    {
+        spriteRenderer.sprite = GameManager.instance.playerSprites[skinId];
+    }
+    #endregion
+
+    #region 캐릭터 레벨
+
+    public void OnLevelUp()
+    {
+        maxHitpoint++;
+        hitpoint = maxHitpoint;
+    }
+    
+
+    public void SetLevel(int level)
+    {
+        for (int i = 0; i < level; i++)
+        {
+            OnLevelUp();
+        }
+    }
+    #endregion
+
+    #endregion
+}
